@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>UFC Event Scraper Results</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .event {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .fight {
+            margin-left: 20px;
+            margin-bottom: 5px;
+        }
+
+        .main-event {
+            font-weight: bold;
+            color: #d20000;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>UFC Event Scraper Results</h1>
+    <div id="summary"></div>
+    <div id="eventList"></div>
+
+    <script type="text/javascript">
+        d3.json("/api/events").then(function (data) {
+            // Display summary
+            d3.select("#summary")
+                .append("p")
+                .text("Total events displayed: " + data.length);
+
+            // Display event details
+            var events = d3.select("#eventList").selectAll("div.event")
+                .data(data)
+                .enter()
+                .append("div")
+                .attr("class", "event");
+
+            events.append("h2")
+                .text(d => d.event);
+
+            events.append("p")
+                .text(d => "Date: " + d.date + " | Location: " + d.location);
+
+            events.append("p")
+                .text(d => "Number of fights: " + d.fights.length);
+
+            // Display main event
+            events.append("p")
+                .attr("class", "main-event")
+                .text(d => {
+                    var mainEvent = d.fights.find(fight => fight.main);
+                    return mainEvent ? `Main Event: ${mainEvent.winner} vs ${mainEvent.loser} (${mainEvent.method})` : "Main event information not available";
+                });
+
+            // Display a few more fights (e.g., top 3)
+            events.selectAll("p.fight")
+                .data(d => d.fights.filter(fight => !fight.main).slice(0, 3))  // Skip main event, show next 3
+                .enter()
+                .append("p")
+                .attr("class", "fight")
+                .text(fight => `${fight.winner} def. ${fight.loser} (${fight.method})`);
+
+        }).catch(function (error) {
+            console.log("Error loading or parsing data:", error);
+            d3.select("body").append("p")
+                .text("Error loading data. Please check the console for details.");
+        });
+    </script>
+</body>
+
+</html>

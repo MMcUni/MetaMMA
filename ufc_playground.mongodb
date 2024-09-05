@@ -1,0 +1,61 @@
+// MongoDB Playground for UFC Fight Data
+// Make sure you are connected to your MetaMMA cluster
+
+// Select the database to use.
+use('MetaMMA');
+
+// Insert a sample event with fights into the events collection.
+db.getCollection('events').insertOne({
+  "event": "UFC 305 - Du Plessis vs. Adesanya",
+  "organization": "Ultimate Fighting Championship (UFC)",
+  "date": new Date("2024-08-17"),
+  "time": "00:00:00-07:00",
+  "location": "RAC Arena, Perth, Western Australia, Australia",
+  "isFutureEvent": false,
+  "fights": [
+    {
+      "main": true,
+      "match": 11,
+      "winner": "KaiKara-France",
+      "loser": "SteveErceg",
+      "weight_class": "Flyweight",
+      "method": "TKO (Punches)",
+      "referee": "Rich Mitchell",
+      "round": 1,
+      "time": "4:04"
+    },
+    // ... other fights ...
+  ]
+});
+
+// Find all events in a specific location
+const eventsInPerth = db.getCollection('events').find({
+  location: /Perth/
+}).count();
+
+console.log(`${eventsInPerth} events took place in Perth.`);
+
+// Aggregate to find the most common fight method
+db.getCollection('events').aggregate([
+  { $unwind: "$fights" },
+  { $group: { _id: "$fights.method", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 1 }
+]);
+
+// Find all main events won by a specific fighter
+db.getCollection('events').find({
+  "fights": {
+    $elemMatch: {
+      "main": true,
+      "winner": "KaiKara-France"
+    }
+  }
+});
+
+// Count the number of fights per weight class
+db.getCollection('events').aggregate([
+  { $unwind: "$fights" },
+  { $group: { _id: "$fights.weight_class", count: { $sum: 1 } } },
+  { $sort: { count: -1 } }
+]);
